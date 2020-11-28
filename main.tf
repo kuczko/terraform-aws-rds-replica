@@ -63,9 +63,9 @@ resource "aws_db_instance" "default" {
 }
 
 resource "aws_db_subnet_group" "default" {
-  count      = "${local.enabled && var.same_region == "false" ? 1 : 0}"
-  name       = "${module.label.id}"
-  subnet_ids = ["${var.subnet_ids}"]
+  count      = local.enabled && var.same_region == "false" ? 1 : 0
+  name       = module.label.id
+  subnet_ids = var.subnet_ids
   tags       = "${module.label.tags}"
 }
 
