@@ -194,3 +194,42 @@ variable "same_region" {
   description = "Whether this replica is in the same region as the master."
   default     = "false"
 }
+
+variable "option_group_name" {
+  type        = string
+  description = "Name of the DB option group to associate"
+  default     = ""
+}
+
+variable "engine" {
+  type        = string
+  description = "Database engine type"
+  # http://docs.aws.amazon.com/cli/latest/reference/rds/create-db-instance.html
+  # - mysql
+  # - postgres
+  # - oracle-*
+  # - sqlserver-*
+}
+
+variable "engine_major_version" {
+  type        = string
+  description = "Database engine major version, depends on engine type"
+}
+
+variable "db_options" {
+  type = list(object({
+    db_security_group_memberships  = list(string)
+    option_name                    = string
+    port                           = number
+    version                        = string
+    vpc_security_group_memberships = list(string)
+
+    option_settings = list(object({
+      name  = string
+      value = string
+    }))
+  }))
+
+  default     = []
+  description = "A list of DB options to apply with an option group. Depends on DB engine"
+}

@@ -16,22 +16,44 @@ module "final_snapshot_label" {
   name       = "${var.name}"
   stage      = "${var.stage}"
   delimiter  = "${var.delimiter}"
-  attributes = ["${compact(concat(var.attributes, list("final", "snapshot")))}"]
+  attributes = var.attributes
   tags       = "${var.tags}"
-}
-
-resource "aws_kms_key" "default" {
-  count                   = "${local.enabled && length(var.kms_key_id) == 0 ? 1 : 0}"
-  description             = "${module.label.id}"
-  deletion_window_in_days = 10
-  enable_key_rotation     = true
-  tags                    = "${module.label.tags}"
 }
 
 locals {
   enabled                   = "${var.enabled == "true"}"
   final_snapshot_identifier = "${length(var.final_snapshot_identifier) > 0 ? var.final_snapshot_identifier : module.final_snapshot_label.id}"
-  kms_key_id                = "${length(var.kms_key_id) > 0 ? var.kms_key_id : join("", aws_kms_key.default.*.arn)}"
+}
+
+resource "aws_db_option_group" "default" {
+  count                = length(var.option_group_name) == 0 && var.enabled ? 1 : 0
+  name                 = module.label.id
+  engine_name          = var.engine
+  major_engine_version = var.engine_major_version
+  tags                 = module.label.tags
+
+  dynamic "option" {
+    for_each = var.db_options
+    content {
+      db_security_group_memberships  = lookup(option.value, "db_security_group_memberships", null)
+      option_name                    = option.value.option_name
+      port                           = lookup(option.value, "port", null)
+      version                        = lookup(option.value, "version", null)
+      vpc_security_group_memberships = lookup(option.value, "vpc_security_group_memberships", null)
+
+      dynamic "option_settings" {
+        for_each = lookup(option.value, "option_settings", [])
+        content {
+          name  = option_settings.value.name
+          value = option_settings.value.value
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_db_instance" "default" {
@@ -40,7 +62,7 @@ resource "aws_db_instance" "default" {
   port                        = "${var.database_port}"
   instance_class              = "${var.instance_class}"
   storage_encrypted           = "${var.storage_encrypted}"
-  vpc_security_group_ids      = ["${aws_security_group.default.*.id}"]
+  vpc_security_group_ids      = [ join("",aws_security_group.default.*.id) ]
   db_subnet_group_name        = "${join("", aws_db_subnet_group.default.*.name)}"
   multi_az                    = "${var.multi_az}"
   storage_type                = "${var.storage_type}"
@@ -57,9 +79,10 @@ resource "aws_db_instance" "default" {
   backup_window               = "${var.backup_window}"
   tags                        = "${module.label.tags}"
   final_snapshot_identifier   = "${local.final_snapshot_identifier}"
-  kms_key_id                  = "${local.kms_key_id}"
+  kms_key_id                  = var.kms_key_id
   monitoring_interval         = "${var.monitoring_interval}"
   replicate_source_db         = "${var.replicate_source_db}"
+  option_group_name           = length(var.option_group_name) > 0 ? var.option_group_name : join("", aws_db_option_group.default.*.name)
 }
 
 resource "aws_db_subnet_group" "default" {
@@ -103,11 +126,11 @@ resource "aws_security_group_rule" "allow_egress" {
 }
 
 module "dns_host_name" {
-  source    = "git::https://github.com/cloudposse/terraform-aws-route53-cluster-hostname.git?ref=tags/0.2.5"
+  source    = "git::https://github.com/cloudposse/terraform-aws-route53-cluster-hostname.git?ref=tags/0.7.0"
   enabled   = "${local.enabled && length(var.dns_zone_id) > 0 ? "true" : "false"}"
   namespace = "${var.namespace}"
   name      = "${var.host_name}"
   stage     = "${var.stage}"
   zone_id   = "${var.dns_zone_id}"
-  records   = "${aws_db_instance.default.*.address}"
+  records   = [ join("", aws_db_instance.default.*.address) ]
 }
