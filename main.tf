@@ -138,5 +138,6 @@ module "dns_host_name" {
   name      = "${var.host_name}"
   stage     = "${var.stage}"
   zone_id   = "${var.dns_zone_id}"
+  dns_name  = var.host_name
   records   = [ join("", aws_db_instance.default.*.address) ]
 }
