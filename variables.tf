@@ -233,3 +233,9 @@ variable "db_options" {
   default     = []
   description = "A list of DB options to apply with an option group. Depends on DB engine"
 }
+
+variable "associate_security_group_ids" {
+  type        = list(string)
+  default     = []
+  description = "The IDs of the existing security groups to associate with the DB instance"
+}

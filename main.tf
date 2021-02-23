@@ -62,7 +62,12 @@ resource "aws_db_instance" "default" {
   port                        = "${var.database_port}"
   instance_class              = "${var.instance_class}"
   storage_encrypted           = "${var.storage_encrypted}"
-  vpc_security_group_ids      = [ join("",aws_security_group.default.*.id) ]
+  vpc_security_group_ids      = compact(
+    concat(
+      [join("", aws_security_group.default.*.id)],
+      var.associate_security_group_ids
+    )
+  )
   db_subnet_group_name        = "${join("", aws_db_subnet_group.default.*.name)}"
   multi_az                    = "${var.multi_az}"
   storage_type                = "${var.storage_type}"
