@@ -69,6 +69,7 @@ resource "aws_db_instance" "default" {
     )
   )
   db_subnet_group_name        = "${join("", aws_db_subnet_group.default.*.name)}"
+  db_parameter                = var.db_parameter
   multi_az                    = "${var.multi_az}"
   storage_type                = "${var.storage_type}"
   iops                        = "${var.iops}"
