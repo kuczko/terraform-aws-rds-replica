@@ -239,3 +239,12 @@ variable "associate_security_group_ids" {
   default     = []
   description = "The IDs of the existing security groups to associate with the DB instance"
 }
+
+# This is for custom parameters to be passed to the DB
+# We're "cloning" default ones, but we need to specify which should be copied
+variable "db_parameter_group" {
+  type        = string
+  description = "The DB parameter group family name. The value depends on DB engine used. See [DBParameterGroupFamily](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBParameterGroup.html#API_CreateDBParameterGroup_RequestParameters) for instructions on how to retrieve applicable value."
+  # "mysql5.6"
+  # "postgres9.5"
+}
